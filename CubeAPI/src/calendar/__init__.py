@@ -8,7 +8,7 @@ class Calendar:
     @staticmethod
     def add(meeting: 'Meeting'):
         meetings = Calendar.getData()
-        # meetings.append(meeting)
+        meetings.append(meeting)
         return meetings
 
     @staticmethod
@@ -74,17 +74,6 @@ class Calendar:
             i += 1
 
         return save_meeting
-
-    # Returns the count of total meetings
-    @staticmethod
-    def countMeetings() -> int:
-        meetings = Calendar.getData()
-
-        i = 0
-        for meeting in meetings:
-            i += 1
-
-        return i
 
     # Returns a filtered lists of all meetings in the future
     @staticmethod

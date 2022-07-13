@@ -94,9 +94,9 @@ def calendar(date: str,
         }
     )
 
-    # meeting = Meeting(JSON)
-    # return Calendar.add(meeting)
-    return stmt
+    meeting = Meeting()
+    return Calendar.add(meeting)
+    # return stmt
 
 
 @app.post("/timer/{ms}")
