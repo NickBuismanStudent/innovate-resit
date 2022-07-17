@@ -102,7 +102,8 @@ class Calendar:
 
 class Meeting(Calendar):
     def __init__(self, meeting: json):
-        self.meeting_time: list[str, str] = [meeting["time"]["begin"], meeting["time"]["end"]]
+        self.meeting_begin: str = ["begin"]
+        self.meeting_end: str = ["end"]
         self.meeting_description: str = meeting["description"]
         self.meeting_date: str = meeting["date"]
         self.meeting_loc: str = meeting["location"]
@@ -129,14 +130,14 @@ class Meeting(Calendar):
             ", title: " + self.meeting_title +
             ", location: " + self.meeting_loc +
             ", description: " + self.meeting_description +
-            ", time: {begin: " + self.meeting_time[0] + ", end: " + self.meeting_time[1] + "}"
+            ", begin: " + self.meeting_begin + ", end: " + self.meeting_end + "}"
         )
 
-    # Returns a DateTime object value
-    @staticmethod
-    def getDateTime(meeting: 'Meeting'):
-        split_date = meeting.meeting_date.split("-")
-        split_time = meeting.meeting_time[0].split(":")
-
-        return datetime.datetime(year=int(split_date[0]), month=int(split_date[1]), day=int(split_date[2]),
-                                 hour=int(split_time[0]), minute=int(split_time[1]))
+    # # Returns a DateTime object value
+    # @staticmethod
+    # def getDateTime(meeting: 'Meeting'):
+    #     split_date = meeting.meeting_date.split("-")
+    #     split_time = meeting.meeting_time.split(":")
+    #
+    #     return datetime.datetime(year=int(split_date[0]), month=int(split_date[1]), day=int(split_date[2]),
+    #                              hour=int(split_time[0]), minute=int(split_time[1]))

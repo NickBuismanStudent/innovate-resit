@@ -2,25 +2,21 @@ import json
 import asyncio
 import uvicorn
 import socket
-from typing import Optional
-
 import threading
 import time
+from typing import Optional
 
-import requests
-from fastapi import FastAPI, status, Response, HTTPException
+from fastapi import FastAPI, status, Request
 
 from src.calendar import Meeting, Calendar
 from src.log.log import Log
-from src.types import SyncType, TimerStates, ReturnJSON, DetailJSON
+from src.types import SyncType, ReturnJSON, DetailJSON
 from src.tts.TTS import TTS
 
 app = FastAPI()
-
 Log().cleanFile()
 
 is_timer_running = 0
-
 ip_set = 0
 
 class BackgroundTasks(threading.Thread):
@@ -35,10 +31,10 @@ class BackgroundTasks(threading.Thread):
             tts.play()
             time.sleep(5)
 
-@app.on_event("startup")
-async def startup_event():
-    t = BackgroundTasks()
-    t.start()
+# @app.on_event("startup")
+# async def startup_event():
+#     t = BackgroundTasks()
+#     t.start()
 
 @app.get("/")
 def main():
@@ -64,39 +60,24 @@ def alert(text: str):
     tts.play()
     return {"detail": "Success"}
 
-@app.get("/calendar/{calendar_options}")
-def calendar(calendar_options: SyncType) -> ReturnJSON:
-    if calendar_options is SyncType.SYNC:
-        pass
-    elif calendar_options is SyncType.GET:
-        return Calendar.getNext()
-    return ReturnJSON(detail=DetailJSON(message="", type=status.HTTP_200_OK))
+# Currently disabled to prevent VLC from playing every 5 seconds
+# @app.get("/calendar/{calendar_options}")
+# def calendar(calendar_options: SyncType) -> ReturnJSON:
+#     if calendar_options is SyncType.SYNC:
+#         pass
+#     elif calendar_options is SyncType.GET:
+#         return Calendar.getNext()
+#     return ReturnJSON(detail=DetailJSON(message="", type=status.HTTP_200_OK))
 
 
 @app.post("/calendar/add")
-def calendar(date: str,
-             title: str,
-             location: str,
-             description: str,
-             time_begin: str,
-             time_end: str):
-
-    stmt = json.dumps(
-        {
-            "date": date,
-            "title": title,
-            "location": location,
-            "description": description,
-            "time": {
-                "begin": time_begin,
-                "end": time_end
-            }
-        }
-    )
-
-    meeting = Meeting()
-    return Calendar.add(meeting)
-    # return stmt
+async def calendar_add(data: Request):
+    cal_info = await data.json()
+    print(cal_info)
+    return {
+        "status" : "SUCCES",
+        "data" : cal_info
+    }
 
 
 @app.post("/timer/{ms}")

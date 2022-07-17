@@ -10,9 +10,9 @@ npm-debug.*
 *.orig.*
 web-build/
 *.pyc
-CubeAPI\.idea
-CubeAPI\src\log\logs.txt
-CubeAPI\src\tts\temp.mp3
+.idea
+logs.txt
+temp.mp3
 
 # macOS
 .DS_Store
