@@ -10,7 +10,6 @@ from fastapi import FastAPI, status, Request
 
 from src.calendar import Meeting, Calendar
 from src.log.log import Log
-from src.types import SyncType, ReturnJSON, DetailJSON
 from src.tts.TTS import TTS
 
 app = FastAPI()
@@ -31,6 +30,7 @@ class BackgroundTasks(threading.Thread):
             tts.play()
             time.sleep(5)
 
+# Currently disabled to prevent VLC from playing every 5 seconds
 # @app.on_event("startup")
 # async def startup_event():
 #     t = BackgroundTasks()
@@ -43,7 +43,7 @@ def main():
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000)
 
-@app.post("/ip")
+@app.get("/ip")
 async def stop_echo():
     global ip_set
     ip_set = 1
@@ -60,16 +60,6 @@ def alert(text: str):
     tts.play()
     return {"detail": "Success"}
 
-# Currently disabled to prevent VLC from playing every 5 seconds
-# @app.get("/calendar/{calendar_options}")
-# def calendar(calendar_options: SyncType) -> ReturnJSON:
-#     if calendar_options is SyncType.SYNC:
-#         pass
-#     elif calendar_options is SyncType.GET:
-#         return Calendar.getNext()
-#     return ReturnJSON(detail=DetailJSON(message="", type=status.HTTP_200_OK))
-
-
 @app.post("/calendar/add")
 async def calendar_add(data: Request):
     cal_info = await data.json()
@@ -79,6 +69,13 @@ async def calendar_add(data: Request):
         "data" : cal_info
     }
 
+# @app.get("/calendar/{calendar_options}")
+# def calendar(calendar_options: SyncType) -> ReturnJSON:
+#     if calendar_options is SyncType.SYNC:
+#         pass
+#     elif calendar_options is SyncType.GET:
+#         return Calendar.getNext()
+#     return ReturnJSON(detail=DetailJSON(message="", type=status.HTTP_200_OK))
 
 @app.post("/timer/{ms}")
 async def timer(ms: int):
