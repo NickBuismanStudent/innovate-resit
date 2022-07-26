@@ -37,6 +37,12 @@ namespace CubicSetupApp
             cmd = cmd.ToLower();
             switch (cmd)
             {
+                //  <Debugging>
+                case "alert":
+                    tts(Console.ReadLine());
+                    break;
+                //  </Debugging>
+
                 case "add":
                     string meeting = CreateJson();
                     SendJson(meeting);
@@ -90,19 +96,28 @@ namespace CubicSetupApp
         /// <returns>Json serialised string with meeting details</returns>
         static string CreateJson()
         {
-            Console.WriteLine("Please enter a title for the meeting");
-            string Title = Console.ReadLine();
-            Console.WriteLine("Please enter a description for the meeting");
-            string Description = Console.ReadLine();
-            Console.WriteLine("Please enter a location for the meeting");
-            string Location = Console.ReadLine();
-            Console.WriteLine("Please enter a date for the meeting");
-            string date = Console.ReadLine();
-            Console.WriteLine("Please enter a starting time for the meeting");
-            string timeStart = Console.ReadLine();
-            Meeting Meeting = new Meeting(Title, Description, Location, date, timeStart);
+            string Title = meetingItem("title");
+            string Description = meetingItem("description");
+            string Location = meetingItem("location");
+            string Date = meetingItem("date");
+            string TimeStart = meetingItem("starting time");
+            Meeting Meeting = new Meeting(Title, Description, Location, Date, TimeStart);
             string JsonString = JsonSerializer.Serialize(Meeting);
             return JsonString;
+        }
+
+        /// <summary>
+        /// Small function to prevent repetitive code
+        /// </summary>
+        /// <param name="item">input subject</param>
+        /// <returns>user given input</returns>
+        static string meetingItem(string item)
+        {
+            string msg = "Please enter a "+item+" for the meeting";
+            Console.WriteLine(msg);
+            tts(msg);
+            string result = Console.ReadLine();
+            return result;
         }
 
         /// <summary>
