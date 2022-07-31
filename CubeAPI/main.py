@@ -152,7 +152,17 @@ def calendar_edit(data: Item, day: str, hour: str, title: str):
         "status": "DOESN'T EXISTS"
     }
 
-
+@app.get("/calendar/remove/{day}/{hour}/{title}")
+def calendar_edit(day: str, hour: str, title: str):
+    path = os.path.join("calendar", day, hour[0:2], title+".json")
+    if os.path.exists(path):
+        os.remove(path)
+        return {
+            "status": "SUCCESS"
+        }
+    return {
+        "status": "FAILED"
+    }
 
 # @app.get("/calendar/{calendar_options}")
 # def calendar(calendar_options: SyncType) -> ReturnJSON:
