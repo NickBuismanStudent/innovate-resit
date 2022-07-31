@@ -2,26 +2,26 @@ import json
 import asyncio
 import uvicorn
 import socket
-from typing import Optional
-
 import threading
 import time
+import os
 
-import requests
-from fastapi import FastAPI, status, Response, HTTPException
+from typing import Optional
 
-from src.calendar import Meeting, Calendar
+from fastapi import FastAPI
+from pydantic import BaseModel
+
 from src.log.log import Log
-from src.types import SyncType, TimerStates, ReturnJSON, DetailJSON
 from src.tts.TTS import TTS
 
-app = FastAPI()
 
+app = FastAPI()
 Log().cleanFile()
 
-is_timer_running = 0
 
+is_timer_running = 0
 ip_set = 0
+
 
 class BackgroundTasks(threading.Thread):
     def run(self):
@@ -35,28 +35,36 @@ class BackgroundTasks(threading.Thread):
             tts.play()
             time.sleep(5)
 
-@app.on_event("startup")
-async def startup_event():
-    t = BackgroundTasks()
-    t.start()
+
+# Currently disabled to prevent VLC from playing every 5 seconds
+
+# @app.on_event("startup")
+# async def startup_event():
+#     t = BackgroundTasks()
+#     t.start()
+
 
 @app.get("/")
 def main():
     return {"Message": "Hello"}
 
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000)
 
-@app.post("/ip")
+
+@app.get("/ip")
 async def stop_echo():
     global ip_set
     ip_set = 1
     return
 
+
 @app.get("/logs")
 def getlog(date: Optional[str] = None):
     logs = Log()
     return logs.getLogs(date)
+
 
 @app.get("/alert/{text}")
 def alert(text: str):
@@ -64,42 +72,108 @@ def alert(text: str):
     tts.play()
     return {"detail": "Success"}
 
-@app.get("/calendar/{calendar_options}")
-def calendar(calendar_options: SyncType) -> ReturnJSON:
-    if calendar_options is SyncType.SYNC:
-        pass
-    elif calendar_options is SyncType.GET:
-        return Calendar.getNext()
-    return ReturnJSON(detail=DetailJSON(message="", type=status.HTTP_200_OK))
+#  Basemodel used by calendar/add endpoint for calendar item structure
+class Item(BaseModel):
+    Title: str
+    Description: str
+    Location: str
+    Date: str
+    TimeStart: str
 
-
+#  sets the day, time, and title as directories and filename. Then makes a JSON file in the specified folder
 @app.post("/calendar/add")
-def calendar(date: str,
-             title: str,
-             location: str,
-             description: str,
-             time_begin: str,
-             time_end: str):
+def calendar_add(data: Item):
+    day = data.Date
+    hour = data.TimeStart
+    title = data.Title
 
-    stmt = json.dumps(
-        {
-            "date": date,
-            "title": title,
-            "location": location,
-            "description": description,
-            "time": {
-                "begin": time_begin,
-                "end": time_end
-            }
+    # Checks if the directory exists, and makes one if it doesn't
+    dirs = os.path.join("calendar", day, hour[0:2])
+    if not os.path.exists(dirs):
+        os.makedirs(dirs)
+
+    # checks if the file exists, and makes one if it doesn't
+    path = os.path.join("calendar", day, hour[0:2], title + ".json")
+    if not os.path.exists(path):
+        with open(path, "w", encoding="utf-8") as file:
+            json.dump(data.dict(), file, ensure_ascii=False, indent=4)
+        return {
+            "status": "SUCCES"
         }
-    )
+    return {
+        "status": "ALREADY EXISTS"
+    }
 
-    # meeting = Meeting(JSON)
-    # return Calendar.add(meeting)
-    return stmt
+@app.get("/calendar/days")
+def list_days():
+    path = os.path.join("calendar")
+    list = []
+    for obj in os.listdir(path):
+        list.append(obj)
+    if len(list) == 0:
+        return "There are no items in your calendar"
+    return list
+
+@app.get("/calendar/items/{day}")
+def list_items(day: str):
+    path = os.path.join("calendar", day)
+    if os.path.exists(path):
+        list = []
+        for obj in os.listdir(path):
+            items = os.path.join("calendar", day, obj)
+            for item in os.listdir(items):
+                file = open(os.path.join("calendar", day, obj, item))
+                data = json.loads(file.read())
+                list.append(data["TimeStart"]+" - "+item[0:-5])
+        return list
+    return "There are no items planned that day"
+
+@app.post("/calendar/edit/{day}/{hour}/{title}")
+def calendar_edit(data: Item, day: str, hour: str, title: str):
+    old_day = day
+    old_hour = hour
+    old_title = title
+    new_day = data.Date
+    new_hour = data.TimeStart
+    new_title = data.Title
+    old_path = os.path.join("calendar", old_day, old_hour[0:2], old_title + ".json")
+    new_path = os.path.join("calendar", new_day, new_hour[0:2], new_title + ".json")
+    new_dir = os.path.join("calendar", new_day, new_hour[0:2])
+    if os.path.exists(old_path):
+        os.remove(old_path)
+        if not os.path.exists(new_dir):
+            os.makedirs(new_dir)
+        with open(new_path, "w", encoding="utf-8") as file:
+            json.dump(data.dict(), file, ensure_ascii=False, indent=4)
+        return {
+            "status": "SUCCES"
+        }
+    return {
+        "status": "DOESN'T EXISTS"
+    }
+
+@app.get("/calendar/remove/{day}/{hour}/{title}")
+def calendar_edit(day: str, hour: str, title: str):
+    path = os.path.join("calendar", day, hour[0:2], title+".json")
+    if os.path.exists(path):
+        os.remove(path)
+        return {
+            "status": "SUCCESS"
+        }
+    return {
+        "status": "FAILED"
+    }
+
+# @app.get("/calendar/{calendar_options}")
+# def calendar(calendar_options: SyncType) -> ReturnJSON:
+#     if calendar_options is SyncType.SYNC:
+#         pass
+#     elif calendar_options is SyncType.GET:
+#         return Calendar.getNext()
+#     return ReturnJSON(detail=DetailJSON(message="", type=status.HTTP_200_OK))
 
 
-@app.post("/timer/{ms}")
+@app.get("/timer/{ms}")
 async def timer(ms: int):
     global is_timer_running
     t = ms
@@ -114,7 +188,8 @@ async def timer(ms: int):
     is_timer_running = 0
     return
 
-@app.post("/abort")
+
+@app.get("/abort")
 async def stop_timer():
     global is_timer_running
     is_timer_running = 0
