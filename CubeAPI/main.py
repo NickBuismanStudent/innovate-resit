@@ -128,6 +128,31 @@ def list_items(day: str):
         return list
     return "There are no items planned that day"
 
+@app.post("/calendar/edit/{day}/{hour}/{title}")
+def calendar_edit(data: Item, day: str, hour: str, title: str):
+    old_day = day
+    old_hour = hour
+    old_title = title
+    new_day = data.Date
+    new_hour = data.TimeStart
+    new_title = data.Title
+    old_path = os.path.join("calendar", old_day, old_hour[0:2], old_title + ".json")
+    new_path = os.path.join("calendar", new_day, new_hour[0:2], new_title + ".json")
+    new_dir = os.path.join("calendar", new_day, new_hour[0:2])
+    if os.path.exists(old_path):
+        os.remove(old_path)
+        if not os.path.exists(new_dir):
+            os.makedirs(new_dir)
+        with open(new_path, "w", encoding="utf-8") as file:
+            json.dump(data.dict(), file, ensure_ascii=False, indent=4)
+        return {
+            "status": "SUCCES"
+        }
+    return {
+        "status": "DOESN'T EXISTS"
+    }
+
+
 
 # @app.get("/calendar/{calendar_options}")
 # def calendar(calendar_options: SyncType) -> ReturnJSON:
